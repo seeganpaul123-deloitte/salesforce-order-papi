@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_03ec5615_f5aa_4e12_8069_26390104d159_Output_Payload = Array<{|  username: Null,   orderId: Any,   effectiveDate: Any,   endDate: Any,   status: Any,   address: Any,   product: {|    product: Any,     quantity: Any,     unitPrice: Any  |},   totalAmount: Any|}>
+

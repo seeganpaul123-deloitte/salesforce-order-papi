@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:secure-properties="http://www.mulesoft.org/schema/mule/secure-properties" xmlns:salesforce-order-system-api="http://www.mulesoft.org/schema/mule/salesforce-order-system-api"
+	xmlns:user-registration-system-api="http://www.mulesoft.org/schema/mule/user-registration-system-api"
+	xmlns:twilio="http://www.mulesoft.org/schema/mule/twilio" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/twilio http://www.mulesoft.org/schema/mule/twilio/current/mule-twilio.xsd
+http://www.mulesoft.org/schema/mule/user-registration-system-api http://www.mulesoft.org/schema/mule/user-registration-system-api/current/mule-user-registration-system-api.xsd
+http://www.mulesoft.org/schema/mule/salesforce-order-system-api http://www.mulesoft.org/schema/mule/salesforce-order-system-api/current/mule-salesforce-order-system-api.xsd
+http://www.mulesoft.org/schema/mule/secure-properties http://www.mulesoft.org/schema/mule/secure-properties/current/mule-secure-properties.xsd">
+	<twilio:config name="Twilio_Connector_Config" doc:name="Twilio Connector Config" doc:id="9988c25f-0cf4-4837-87b1-9454ade1d40a" >
+		<twilio:account-sid-auth-token-connection username="${secure::twilio.username}" password="${secure::twilio.password}" />
+	</twilio:config>
+	<user-registration-system-api:config name="User_registration_system_api_Config" doc:name="User-registration-system-api Config" doc:id="1a30429b-edee-4bce-b861-bde50621bc4c" property_host="${sapi.user}" property_port="${sapi.port}" property_protocol="${sapi.protocol}" property_basePath="${sapi.basepath}" />
+	<salesforce-order-system-api:config name="Salesforce_order_system_api_Config" doc:name="Salesforce-order-system-api Config" doc:id="53f1b837-7208-43b4-8f9e-d5c80536c141" property_host="${sapi.salesforce}" property_port="${sapi.port}" property_protocol="${sapi.protocol}" property_basePath="${sapi.basepath}" />
+	<global-property doc:name="Global Property" doc:id="e62a2e19-0ce3-4732-9206-78c8e64d8c30" name="encryptkey" value="seegan" />
+	<secure-properties:config name="Secure_Properties_Config" doc:name="Secure Properties Config" doc:id="8c328dad-f044-44ce-ae5b-fdbfd41b7358" file="twilio-config.yaml" key="${encryptkey}" >
+		<secure-properties:encrypt algorithm="Blowfish" />
+	</secure-properties:config>
+	<configuration-properties doc:name="Configuration properties" doc:id="c2d06ced-ed59-4d5a-9c4a-3bdf59ab9dd5" file="sapi-config.yaml" />
+	<configuration doc:name="Configuration" doc:id="ae527694-a297-4d64-b119-0642e4e53542" defaultErrorHandler-ref="global-errorhandler" />
+</mule>

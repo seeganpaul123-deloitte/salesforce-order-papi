@@ -1,0 +1,6 @@
+sapi:
+  user: "user-registration-sapi.us-e2.cloudhub.io"
+  salesforce: "salesforce-order-system-api.us-e2.cloudhub.io"
+  port: "80"
+  basepath: "/api"
+  protocol: "HTTP"

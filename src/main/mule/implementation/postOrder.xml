@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce-order-system-api="http://www.mulesoft.org/schema/mule/salesforce-order-system-api" xmlns:user-registration-system-api="http://www.mulesoft.org/schema/mule/user-registration-system-api"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/user-registration-system-api http://www.mulesoft.org/schema/mule/user-registration-system-api/current/mule-user-registration-system-api.xsd
+http://www.mulesoft.org/schema/mule/salesforce-order-system-api http://www.mulesoft.org/schema/mule/salesforce-order-system-api/current/mule-salesforce-order-system-api.xsd">
+	<flow name="postOrderFlow" doc:id="bc1297a0-c315-4672-9c32-a94e00ca7c62" >
+		<logger level="INFO" doc:name="Logger" doc:id="4cf4ee89-2fd4-45ef-b1ae-3bb4ea0b0454" message="started executing postOrder flow"/>
+		<set-variable value="#[payload]" doc:name="payload" doc:id="ff7cef99-7b68-4f7f-9612-039c98a61bcc" variableName="payload"/>
+		<user-registration-system-api:get-statuses doc:name="Get statuses" doc:id="3c3b0277-2301-4f1c-a791-bb9b9fdcff7b" config-ref="User_registration_system_api_Config" username="#[vars.payload.username]"/>
+		<choice doc:name="Choice" doc:id="9486e1d3-e2b1-4bd1-b66a-c9b0197c6254" >
+			<when expression='#[payload.status == "verified"]'>
+				<user-registration-system-api:get-user-by-username doc:name="Get user by username" doc:id="23e8f443-b613-45ca-abde-3e0f2075c700" config-ref="User_registration_system_api_Config" username="#[vars.payload.username]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="23318cbc-4f46-42ae-8b85-eecce554ad3a" message="#[payload]" />
+				<set-variable value="#[payload.salesforceId]" doc:name="salesforceId" doc:id="fb0f8e38-12c4-4829-b7c3-0a310a172f4e" variableName="salecforceId" />
+				<salesforce-order-system-api:get-products doc:name="Get products" doc:id="4511d966-5b67-4b3c-9f97-859e2702c919" config-ref="Salesforce_order_system_api_Config" product="#[vars.payload.product.product]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="650a8533-8711-4fe5-951f-74d24b057e86" message="#[payload]" />
+				<set-variable value="#[payload.id]" doc:name="productId" doc:id="4c00b05b-e419-4ac2-881d-cc2188a6851a" variableName="productId" />
+				<salesforce-order-system-api:get-pricebook-entry-by-product-id-pricebook-id doc:name="Get pricebook entry by product id pricebook id" doc:id="7aa81a09-6396-4ab8-b2b4-0504b2512f3e" config-ref="Salesforce_order_system_api_Config" product-id="#[vars.productId]" pricebook-id="01s5j00000OWMQRAA5"/>
+				<logger level="INFO" doc:name="Logger" doc:id="c1c51b59-5b89-49ab-b7aa-41ac1e82b823" message="#[payload]" />
+				<ee:transform doc:name="Transform Message" doc:id="ba306aa7-c2bd-4935-99b8-2b7744636446">
+			<ee:message>
+			</ee:message>
+			<ee:variables>
+				<ee:set-variable variableName="pricebookEntryId"><![CDATA[%dw 2.0
+output application/json
+---
+payload.id]]></ee:set-variable>
+				<ee:set-variable variableName="unitPrice"><![CDATA[%dw 2.0
+output application/json
+---
+payload.unitPrice as Number]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+				<ee:transform doc:name="Transform Message" doc:id="8d086547-25cf-4b35-8c72-7993f289d9ca">
+			<ee:message>
+				<ee:set-payload resource = "dwl/orderRequest.dwl" />
+			</ee:message>
+		</ee:transform>
+				<salesforce-order-system-api:create-order doc:name="Create order" doc:id="9314c902-9d09-4358-9f25-8c7228ff8155" config-ref="Salesforce_order_system_api_Config" />
+				<ee:transform doc:name="Transform Message" doc:id="78bc5eb2-2c8b-43fb-8c7f-60d1c02257f5">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="35f2b431-457d-4402-a135-7505f4d84a99" message="finished executing postOrder flow"/>
+			</when>
+			<otherwise >
+				<logger level="ERROR" doc:name="Logger" doc:id="b4e314be-ad78-4e2c-9fb6-71eefcfdb915" message="user is logged out"/>
+				<raise-error doc:name="Raise error" doc:id="eda23991-e641-49e4-beac-ebabc0e7e729" type="APP:UNAUTHORISED" description="user is logged out"/>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

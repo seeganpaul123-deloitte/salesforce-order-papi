@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:salesforce-order-system-api="http://www.mulesoft.org/schema/mule/salesforce-order-system-api" xmlns:user-registration-system-api="http://www.mulesoft.org/schema/mule/user-registration-system-api"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/user-registration-system-api http://www.mulesoft.org/schema/mule/user-registration-system-api/current/mule-user-registration-system-api.xsd
+http://www.mulesoft.org/schema/mule/salesforce-order-system-api http://www.mulesoft.org/schema/mule/salesforce-order-system-api/current/mule-salesforce-order-system-api.xsd">
+	<flow name="getOrderFlow" doc:id="27a01894-c97a-4583-9798-bcfe84b761e1" >
+		<logger level="INFO" doc:name="Logger" doc:id="868e0bef-a5cb-49cf-a511-43d11d79c39c" message="started executing getOrder flow"/>
+		<set-variable value="#[attributes.uriParams.username]" doc:name="username" doc:id="d1ef3310-1609-4263-9fd9-9aa553bc55d2" variableName="username"/>
+		<user-registration-system-api:get-statuses doc:name="Get statuses" doc:id="11722a5b-ed00-4bc2-be31-c0d63aaa76a1" config-ref="User_registration_system_api_Config" username="#[vars.username]"/>
+		<choice doc:name="Choice" doc:id="38fa40ae-ade5-47ec-9192-2eb5351c4516" >
+			<when expression='#[payload.status == "verified"]'>
+				<user-registration-system-api:get-user-by-username doc:name="Get user by username" doc:id="525a357c-7d9f-4b14-806b-3d2b47e429b2" config-ref="User_registration_system_api_Config" username="#[vars.username]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="8d8c9f1c-c861-4abb-a455-80a9bbd7f230" message="#[payload]"/>
+				<set-variable value="#[payload.salesforceId]" doc:name="salesforceId" doc:id="b18f6900-bb14-44df-8773-2c6d0e4366c2" variableName="salesforceId"/>
+				<salesforce-order-system-api:get-order-by-account-id doc:name="Get order by account id" doc:id="7390f3a4-ea21-4b13-a6a9-9d20b947e6fd" config-ref="Salesforce_order_system_api_Config" account-id="#[vars.salesforceId]"/>
+				<logger level="INFO" doc:name="Logger" doc:id="e411a0f2-776a-4cdf-9651-d34e0835fa96" message="#[payload]"/>
+				<set-variable value="#[[]]" doc:name="payload" doc:id="82b4e87a-d79d-4da7-b63d-f15669ba0c50" variableName="payload"/>
+				<logger level="INFO" doc:name="Logger" doc:id="cd9d29c6-8652-44bc-a11e-1ddc1fc11bdd" message="starting for each execution"/>
+				<foreach doc:name="For Each" doc:id="302739b2-dcdd-430a-b3b3-02011d6d4e5e" >
+					<flow-ref doc:name="Flow Reference" doc:id="35fb4950-7a3c-47be-87f0-1db7d48c72c4" name="setProduct"/>
+				</foreach>
+				<logger level="INFO" doc:name="Logger" doc:id="d2c183e3-b1a0-4521-bb41-6bc66a1d0c82" message="finished for each execution"/>
+				<ee:transform doc:name="Transform Message" doc:id="ca527d11-f29c-4632-aebf-c50d2fed410e" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+vars.payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="f70353c3-bc78-4ee7-a75d-2b22f0774b22" message="finished executing getOrder flow"/>
+			</when>
+			<otherwise >
+				<logger level="ERROR" doc:name="Logger" doc:id="abed960c-6f0b-49a2-9d9d-81764fac8f50" message="user is logged out" />
+				<raise-error doc:name="Raise error" doc:id="2c7d54a5-0f12-4d80-89c9-0c66f023e239" type="APP:UNAUTHORISED" description="user is logged out" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="setProduct" doc:id="03ec5615-f5aa-4e12-8069-26390104d159" >
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="c1a61d30-40f4-4272-a5e6-e44a6f1fd65c" variableName="data" />
+		<salesforce-order-system-api:get-order-item-by-order-id doc:name="Get order item by order id" doc:id="fc186be4-9450-4002-932d-414c16775055" config-ref="Salesforce_order_system_api_Config" order-id="#[payload.orderId]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="47fca602-f4e5-474b-99af-57d5c752ca37" message="#[payload]" />
+		<ee:transform doc:name="Transform Message" doc:id="4cbc4832-5784-4762-b2d8-48f8e47e4486">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+							<ee:set-variable variableName="productId"><![CDATA[payload.productId]]></ee:set-variable>
+							<ee:set-variable variableName="quantity"><![CDATA[payload.quantity]]></ee:set-variable>
+							<ee:set-variable variableName="unitPrice"><![CDATA[payload.unitPrice]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+		<salesforce-order-system-api:get-pricebook-entry-by-product-id-pricebook-id doc:name="Get pricebook entry by product id pricebook id" doc:id="d82c283d-da65-4319-8cc0-79ed8b9ba42c" config-ref="Salesforce_order_system_api_Config" product-id="#[vars.productId]" pricebook-id="#[vars.data.pricebookId]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="76740ea3-e9e2-42cf-aa65-f81ceecd92a5" message="#[payload]" />
+		<set-variable value="#[payload.name]" doc:name="product" doc:id="a942cb76-b645-4ff8-b3e5-a5aa999ef7bc" variableName="product" />
+		<ee:transform doc:name="Transform Message" doc:id="b2978372-945a-4fcd-8e3f-2ad27cc40852">
+						<ee:message>
+							<ee:set-payload resource = "dwl/getOrder.dwl" />
+						</ee:message>
+					</ee:transform>
+		<ee:transform doc:name="Transform Message" doc:id="49d5d328-0a31-466c-9715-3f4da3d6d89b">
+						<ee:message>
+						</ee:message>
+						<ee:variables>
+							<ee:set-variable variableName="payload"><![CDATA[%dw 2.0
+output application/json
+---
+vars.payload ++ payload]]></ee:set-variable>
+						</ee:variables>
+					</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="7b162a09-c241-43b4-ab79-cfec976370cc" message="#[payload]" />
+	</flow>
+</mule>

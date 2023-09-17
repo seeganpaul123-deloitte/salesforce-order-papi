@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+    <http:listener-config name="salesforce-order-process-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="salesforce-order-process-api-config" api="resource::b8cf1f1a-23fa-40f7-b53f-64bac8e0dba3:salesforce-order-process-api:1.0.3:raml:zip:salesforce-order-process-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <flow name="salesforce-order-process-api-main">
+        <http:listener config-ref="salesforce-order-process-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="salesforce-order-process-api-config" />
+    </flow>
+    <flow name="salesforce-order-process-api-console">
+        <http:listener config-ref="salesforce-order-process-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="salesforce-order-process-api-config" />
+    </flow>
+    <flow name="get:\order\(accountId):salesforce-order-process-api-config">
+        <ee:transform>
+            <ee:variables>
+                <ee:set-variable variableName="accountId">attributes.uriParams.'accountId'</ee:set-variable>
+            </ee:variables>
+        </ee:transform>
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+[
+  {
+    accountId: "0015j00001AmkvkAAB",
+    orderId: "0015j00001AmkvkAAB",
+    effectiveDate: "2023-09-13",
+    endDate: "2023-09-13",
+    status: "Active",
+    address: {
+      street: "xyz",
+      city: "xyz",
+      state: "xyz",
+      country: "xyz"
+    },
+    product: {
+      product: "Watch",
+      quantity: 1,
+      unitPrice: 1000
+    },
+    totalAmount: 1000
+  }
+]]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="post:\order:application\json:salesforce-order-process-api-config">
+        <flow-ref doc:name="Flow Reference" doc:id="d7db2b50-512d-4d2b-812d-29b55f44c5cd" name="postOrderFlow" />
+    </flow>
+    <flow name="post:\sendOtp:application\json:salesforce-order-process-api-config">
+        <flow-ref doc:name="Flow Reference" doc:id="d1d9816b-6606-42db-bdf4-d438474ced61" name="sendOtpFlow" />
+        <ee:transform>
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "An OTP has been sent to registered phone number"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\order\(username):salesforce-order-process-api-config">
+        <flow-ref doc:name="Flow Reference" doc:id="3ee42ea5-824f-4183-9acb-51d79335f4ee" name="getOrderFlow" />
+    </flow>
+</mule>

@@ -1,0 +1,4 @@
+%dw 2.0
+
+type auto_03ec5615_f5aa_4e12_8069_26390104d159_Input_Variables_payload = Array<Nothing>
+

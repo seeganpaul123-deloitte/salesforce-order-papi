@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:user-registration-system-api="http://www.mulesoft.org/schema/mule/user-registration-system-api" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:twilio="http://www.mulesoft.org/schema/mule/twilio"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/twilio http://www.mulesoft.org/schema/mule/twilio/current/mule-twilio.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/user-registration-system-api http://www.mulesoft.org/schema/mule/user-registration-system-api/current/mule-user-registration-system-api.xsd">
+	<flow name="sendOtpFlow" doc:id="12843e12-4758-412b-9ebd-5eecf7106daf" >
+		<logger level="INFO" doc:name="Logger" doc:id="1b8f10a4-e033-420d-b11b-b23dc61fabfe" message="calling system API for OTP"/>
+		<set-variable value="#[payload.username]" doc:name="username" doc:id="04e87e56-b6d7-4bf6-90ab-18d43f268b2d" variableName="username"/>
+		<user-registration-system-api:create-send-otp doc:name="Create send otp" doc:id="cfd71637-6233-437b-a470-0ddb498c1282" config-ref="User_registration_system_api_Config"/>
+		<logger level="INFO" doc:name="Logger" doc:id="4dbac864-a4ad-44f8-bd2d-9141a5058ace" message="#[payload]"/>
+		<set-variable value="#[payload.otp]" doc:name="OTP" doc:id="90c0be54-eda6-4a27-889c-1ee1c8556665" variableName="otp"/>
+		<user-registration-system-api:get-user-by-username doc:name="Get user by username" doc:id="70628a5f-bd1c-48b9-a1d3-b5fec81a0039" config-ref="User_registration_system_api_Config" username="#[vars.username]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="6e451f9b-da82-4e70-bea0-c24eff9cbbc1" message="sending the otp to registered mobile no"/>
+		<ee:transform doc:name="twilio payload" doc:id="686398c8-85aa-4dbf-ba06-d350a0bf642d" >
+			<ee:message >
+				<ee:set-payload resource = "dwl/twilio.dwl" />
+			</ee:message>
+		</ee:transform>
+		<twilio:create20100401-accounts-messagesjson-by-account-sid doc:name="send OTP" doc:id="a63fdf54-bfc5-4952-b401-2095d25a990f" config-ref="Twilio_Connector_Config" accountSid="${secure::twilio.username}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7c35b2be-c7e2-4fc4-ae16-6b7a6d40e427" message="otp is sent to the registered mobile no"/>
+	</flow>
+</mule>
